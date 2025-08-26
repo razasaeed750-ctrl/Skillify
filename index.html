@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Creative Template Hub</title>
+<title>Skillify - Creative Templates</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
 
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBkjwVJzLowUbdwUU16hXaGLQpZEEVxgcE",
   authDomain: "skillify-b742c.firebaseapp.com",
@@ -22,44 +23,63 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-window.openLogin = async function(){
-  const email = prompt("Enter your email:");
-  const password = prompt("Enter your password:");
-  if(!email || !password) return alert("Email and password required!");
-  try { await signInWithEmailAndPassword(auth,email,password); alert("Logged in successfully!"); }
-  catch(err){ if(confirm("Not registered? Sign up now!")) { try { await createUserWithEmailAndPassword(auth,email,password); alert("Signup successful!"); } catch(err2){alert(err2.message);} } else {alert(err.message);} }
+// Show/Hide Login Modal
+window.showLogin = function() { document.getElementById('loginModal').style.display='flex'; }
+window.closeLogin = function() { document.getElementById('loginModal').style.display='none'; }
+
+// Login function
+window.loginUser = async function() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value.trim();
+  if(!email || !password){ alert("Email and password required!"); return; }
+  try {
+    await signInWithEmailAndPassword(auth,email,password);
+    alert("Login successful!");
+    document.getElementById('loginModal').style.display='none';
+    document.getElementById('landing').style.display='none';
+    document.getElementById('mainContent').style.display='block';
+  } catch(err){ alert("Login failed: "+err.message); }
 }
 
+// Signup function
+window.signupUser = async function() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value.trim();
+  if(!email || !password){ alert("Email and password required!"); return; }
+  try {
+    await createUserWithEmailAndPassword(auth,email,password);
+    alert("Signup successful!");
+    document.getElementById('loginModal').style.display='none';
+    document.getElementById('landing').style.display='none';
+    document.getElementById('mainContent').style.display='block';
+  } catch(err){ alert("Signup failed: "+err.message); }
+}
+
+// Template handling
 window.handleTemplate = function(type){
-  if(type==='free'){
-    alert("Opening free template...");
-  } else {
+  if(type==='free'){ alert("Opening free template..."); }
+  else{
     const tier = prompt("Premium template! Choose tier:\n1. Medium (Rs 300/year)\n2. Pro (Rs 500/year)\n3. Lifetime (Rs 2000)");
-    const paymentMethod = prompt("Choose payment method:\n1. Stripe\n2. JazzCash\n3. EasyPaisa");
-    alert(`Payment simulation: ${tier} via ${paymentMethod}. Premium templates unlocked!`);
+    const method = prompt("Choose payment method:\n1. Stripe\n2. JazzCash\n3. EasyPaisa");
+    alert(`Payment simulation: ${tier} via ${method}. Premium templates unlocked!`);
   }
 }
 
+// Chatbot
 window.toggleChat = function(){
   const panel=document.getElementById("chatPanel");
   panel.style.display=panel.style.display==='flex'?'none':'flex';
 }
-
 window.sendMessage = function(e){
   if(e.key==='Enter'){
     const input=document.getElementById("chatInput");
     const msg=input.value.trim();
     if(msg){
       const chatBox=document.getElementById("chatMessages");
-      const userMsg=document.createElement("div");
-      userMsg.textContent="You: "+msg; userMsg.style.margin="5px 0"; userMsg.style.fontWeight="600";
+      const userMsg=document.createElement("div"); userMsg.textContent="You: "+msg; userMsg.style.margin="5px 0"; userMsg.style.fontWeight="600";
       chatBox.appendChild(userMsg);
-      const botMsg=document.createElement("div");
-      botMsg.textContent="Bot: Hi! You said '"+msg+"'";
-      botMsg.style.margin="5px 0";
-      chatBox.appendChild(botMsg);
-      chatBox.scrollTop=chatBox.scrollHeight;
-      input.value="";
+      const botMsg=document.createElement("div"); botMsg.textContent="Bot: Hi! You said '"+msg+"'"; botMsg.style.margin="5px 0";
+      chatBox.appendChild(botMsg); chatBox.scrollTop=chatBox.scrollHeight; input.value="";
     }
   }
 }
@@ -68,12 +88,14 @@ window.sendMessage = function(e){
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Montserrat',sans-serif;}
 body{background:#f0f4f8;color:#333;}
-header{background:linear-gradient(135deg,#ff9a9e 0%,#fad0c4 100%);padding:50px 20px;text-align:center;color:#fff;}
-header h1{font-size:3em;margin-bottom:10px;}
-header p{font-size:1.2em;margin-bottom:20px;}
-header .btn{background:#fff;color:#ff5f6d;padding:15px 25px;border:none;border-radius:25px;font-weight:600;cursor:pointer;transition:0.3s;}
-header .btn:hover{background:#ff5f6d;color:#fff;}
-section{padding:60px 20px;}
+#landing{background:linear-gradient(135deg,#ff9a9e 0%,#fad0c4 100%);padding:100px 20px;text-align:center;color:#fff;}
+#landing h1{font-size:3.5em;margin-bottom:20px;display:flex;justify-content:center;flex-wrap:wrap;}
+#landing h1 span{background:linear-gradient(90deg,#ff5f6d,#ffc371);-webkit-background-clip:text;color:transparent;font-weight:900;animation:bounce 2s infinite;margin-right:10px;}
+#landing p{font-size:1.5em;margin-bottom:30px;}
+#landing .btn{background:#fff;color:#ff5f6d;padding:15px 30px;border:none;border-radius:25px;font-weight:700;cursor:pointer;transition:0.3s;}
+#landing .btn:hover{background:#ff5f6d;color:#fff;}
+@keyframes bounce {0%,20%,50%,80%,100%{transform:translateY(0);}40%{transform:translateY(-15px);}60%{transform:translateY(-8px);}}
+#mainContent{display:none;padding:40px 20px;}
 section h2{text-align:center;font-size:2.5em;margin-bottom:40px;color:#ff5f6d;}
 .templates{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;max-width:1200px;margin:0 auto;}
 .template-card{background:#fff;border-radius:15px;box-shadow:0 8px 20px rgba(0,0,0,0.1);overflow:hidden;transition:transform 0.3s;}
@@ -83,6 +105,10 @@ section h2{text-align:center;font-size:2.5em;margin-bottom:40px;color:#ff5f6d;}
 .template-card .content h3{margin-bottom:10px;color:#ff5f6d;}
 .template-card .content button{background:#ff5f6d;color:#fff;border:none;padding:10px 20px;border-radius:20px;cursor:pointer;transition:0.3s;}
 .template-card .content button:hover{background:#ff9a9e;}
+#loginModal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);justify-content:center;align-items:center;z-index:1000;}
+#loginModal .modalContent{background:#fff;padding:30px;border-radius:15px;text-align:center;width:300px;}
+#loginModal input{width:90%;padding:10px;margin:10px 0;border-radius:10px;border:1px solid #ddd;}
+#loginModal button{padding:10px 20px;border:none;border-radius:20px;margin:5px;cursor:pointer;background:#ff5f6d;color:#fff;font-weight:600;}
 .chatbot{position:fixed;bottom:20px;right:20px;background:#ff5f6d;color:#fff;border-radius:50px;width:60px;height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:28px;z-index:1000;}
 .chatbot-panel{position:fixed;bottom:90px;right:20px;width:300px;max-height:400px;background:#fff;border-radius:15px;box-shadow:0 8px 20px rgba(0,0,0,0.2);display:none;flex-direction:column;overflow:hidden;z-index:1000;}
 .chatbot-panel header{background:#ff5f6d;color:#fff;padding:15px;text-align:center;}
@@ -95,12 +121,29 @@ footer .info{margin-top:10px;font-size:0.9em;}
 </head>
 <body>
 
-<header>
-<h1>Creative Template Hub</h1>
-<p>Your one-stop solution for CVs, Presentations, Designs & Media Templates!</p>
-<button class="btn" onclick="openLogin()">Get Started</button>
-</header>
+<!-- Landing -->
+<div id="landing">
+<h1><span>Skillify</span>: Build Stunning Designs, CVs, Slides & More Effortlessly</h1>
+<p>Create, Design, and Inspire with Skillify Templates</p>
+<button class="btn" onclick="showLogin()">Get Started</button>
+</div>
 
+<!-- Login/Signup Modal -->
+<div id="loginModal">
+  <div class="modalContent">
+    <h2>Login / Signup</h2>
+    <input type="email" id="loginEmail" placeholder="Email">
+    <input type="password" id="loginPassword" placeholder="Password">
+    <div>
+      <button onclick="loginUser()">Login</button>
+      <button onclick="signupUser()">Sign Up</button>
+    </div>
+    <button style="background:#ddd;color:#333;" onclick="closeLogin()">Cancel</button>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div id="mainContent">
 <section id="cv-wizard">
 <h2>CV Wizard</h2>
 <div class="templates">
@@ -148,7 +191,9 @@ footer .info{margin-top:10px;font-size:0.9em;}
 <div class="content"><h3>Marketing Clip</h3><button onclick="handleTemplate('premium')">Use Template</button></div></div>
 </div>
 </section>
+</div>
 
+<!-- Chatbot -->
 <div class="chatbot" onclick="toggleChat()">💬</div>
 <div class="chatbot-panel" id="chatPanel">
 <header>Chat with TemplateBot</header>
@@ -156,11 +201,12 @@ footer .info{margin-top:10px;font-size:0.9em;}
 <input type="text" id="chatInput" placeholder="Say something..." onkeypress="sendMessage(event)">
 </div>
 
+<!-- Footer -->
 <footer>
 <a href="#">About Us</a> | <a href="#">Contact Us</a><br>
 <div class="info">
-About Us: Skillify is a creative template hub offering CVs, slides, designs & media templates for everyone.<br>
-Contact Us: <a href="mailto:razasaeed750@gmail.com">razasaeed750@gmail.com</a><br>
+About Us: Skillify is a creative hub offering CVs, slides, designs & media templates for everyone.<br>
+Contact: <a href="mailto:razasaeed750@gmail.com">razasaeed750@gmail.com</a><br>
 &copy; 2025 Skillify | All Rights Reserved
 </div>
 </footer>
