@@ -1,77 +1,530 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Skillify Signup/Login</title>
-  <!-- Firebase App (the core Firebase SDK) -->
-  <script type="module">
-    // Import Firebase modules
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.2.0/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.2.0/firebase-analytics.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.2.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.2.0/firebase-firestore.js";
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>CV Wizard Studio — Skillify</title>
 
-    // Your Firebase configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyBkjwVJzLowUbdwUU16hXaGLQpZEEVxgcE",
-      authDomain: "skillify-b742c.firebaseapp.com",
-      projectId: "skillify-b742c",
-      storageBucket: "skillify-b742c.firebasestorage.app",
-      messagingSenderId: "296173031324",
-      appId: "1:296173031324:web:0a70f85d66480d38eb0259",
-      measurementId: "G-DKYEMFMB0H"
-    };
+<!-- ========== Module: Firebase (v10) ========== -->
+<script type="module">
+/*
+  Single-file full app for "CV Wizard Studio".
+  - Uses your Firebase project (skillify-b742c).
+  - Edit CLOUD_FUNCTION_CHATBOT_URL to enable real chatbot via Cloud Function.
+*/
 
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+/* ---------- Firebase imports (modular v10) ---------- */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, doc, setDoc, addDoc, getDocs, getDoc, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getStorage, ref as sref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-    // Signup function
-    window.signup = async () => {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
+/* ---------- YOUR FIREBASE CONFIG (from console) ---------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyBkjwVJzLowUbdwUU16hXaGLQpZEEVxgcE",
+  authDomain: "skillify-b742c.firebaseapp.com",
+  projectId: "skillify-b742c",
+  storageBucket: "skillify-b742c.appspot.com",
+  messagingSenderId: "296173031324",
+  appId: "1:296173031324:web:0a70f85d66480d38eb0259",
+  measurementId: "G-DKYEMFMB0H"
+};
 
-      try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        alert("Signup successful! User UID: " + user.uid);
+/* ---------- Optional: Cloud Function URL for Chatbot (set later) ---------- */
+const CLOUD_FUNCTION_CHATBOT_URL = ""; // e.g. "https://us-central1-.../chat"
 
-        // Save user info in Firestore
-        await setDoc(doc(db, "users", user.uid), {
-          email: email,
-          createdAt: new Date()
-        });
-        console.log("User data saved in Firestore.");
-      } catch (error) {
-        console.error(error);
-        alert(error.message);
-      }
-    };
+/* ---------- Init Firebase ---------- */
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
 
-    // Login function
-    window.login = async () => {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
+/* ---------- App state ---------- */
+let currentUser = null;
+let userTier = "free";
+let templates = []; // will load from Firestore or fallback
 
-      try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        alert("Login successful! Welcome " + user.email);
-      } catch (error) {
-        console.error(error);
-        alert(error.message);
-      }
-    };
-  </script>
+/* ---------- Fallback templates (if Firestore empty) ---------- */
+/* medium = should be 70 templates accessible for 'medium' users in product logic
+   but here we include a few sample fallback templates for demo. */
+const FALLBACK_TEMPLATES = [
+  { id:"cv-free-1", title:"Simple CV (Free)", type:"cv", tier:"free",
+    html:`<div style="padding:22px;font-family:Arial;color:#0a0a0a"><h1 contenteditable>Full Name</h1><h3 contenteditable>Job Title</h3><p contenteditable>Short summary...</p><h4>Skills</h4><p contenteditable>Python, HTML, CSS</p></div>` },
+  { id:"cv-free-2", title:"Classic CV (Free)", type:"cv", tier:"free",
+    html:`<div style="padding:18px;background:#fff;border-radius:8px"><h2 contenteditable>Full Name</h2><div contenteditable>Professional summary...</div></div>` },
+  { id:"ppt-free-1", title:"Pitch Slide (Free)", type:"ppt", tier:"free",
+    html:`<div style="height:360px;display:grid;place-items:center;background:linear-gradient(135deg,#111,#333);color:#fff"><h1 contenteditable>Slide Title</h1></div>` },
+  { id:"cv-medium-1", title:"Modern CV (Medium)", type:"cv", tier:"medium",
+    html:`<div style="padding:18px"><header style="background:#06b6d4;color:#fff;padding:12px;border-radius:8px"><h1 contenteditable>Full Name</h1></header><section contenteditable style="margin-top:12px">Summary...</section></div>` },
+  { id:"ppt-pro-1", title:"Neon PPT (Pro)", type:"ppt", tier:"pro",
+    html:`<div style="height:360px;display:grid;place-items:center;background:linear-gradient(135deg,#6ee7ff,#a78bfa);color:#0b0f1a"><h1 contenteditable>Title</h1></div>` }
+];
+
+/* ---------- AUTH FUNCTIONS ---------- */
+window.doSignup = async () => {
+  const email = document.getElementById("signupEmail").value.trim();
+  const pass  = document.getElementById("signupPassword").value;
+  if(!email || !pass) return alert("Enter email & password");
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    // create user doc
+    await setDoc(doc(db, "users", cred.user.uid), { email, subscriptionTier: "free", createdAt: Date.now() });
+    alert("Signup successful — Welcome!");
+  } catch(err) {
+    alert("Signup error: " + err.message);
+  }
+};
+
+window.doLogin = async () => {
+  const email = document.getElementById("loginEmail").value.trim();
+  const pass  = document.getElementById("loginPassword").value;
+  if(!email || !pass) return alert("Enter email & password");
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    // onAuthStateChanged will update UI
+  } catch(err) {
+    alert("Login error: " + err.message);
+  }
+};
+
+window.doLogout = async () => {
+  await signOut(auth);
+  location.reload();
+};
+
+/* ---------- AUTH STATE MONITOR ---------- */
+onAuthStateChanged(auth, async user => {
+  currentUser = user;
+  if(user){
+    // load user doc
+    try {
+      const udoc = await getDoc(doc(db, "users", user.uid));
+      userTier = (udoc.exists() && udoc.data().subscriptionTier) ? udoc.data().subscriptionTier : "free";
+    } catch(e) { userTier = "free"; }
+    // show app UI
+    document.getElementById("authBox").style.display = "none";
+    document.getElementById("appWrap").style.display = "block";
+    document.getElementById("userEmail").innerText = user.email;
+    document.getElementById("userTier").innerText = userTier;
+    await loadTemplates();
+    loadUserProjects();
+  } else {
+    document.getElementById("authBox").style.display = "block";
+    document.getElementById("appWrap").style.display = "none";
+  }
+});
+
+/* ---------- TEMPLATES: load from Firestore or fallback ---------- */
+async function loadTemplates(){
+  templates = [];
+  try {
+    const snap = await getDocs(collection(db, "templates"));
+    snap.forEach(d => templates.push({ id: d.id, ...d.data() }));
+  } catch(err){
+    console.warn("Failed to load templates from Firestore, using fallback templates.", err.message);
+  }
+  if(templates.length === 0) templates = FALLBACK_TEMPLATES;
+  renderTemplateList();
+}
+
+function renderTemplateList(){
+  const el = document.getElementById("templateList");
+  el.innerHTML = "";
+  const allowed = allowedTiers(userTier);
+  templates.forEach(t => {
+    const isAllowed = allowed.includes(t.tier || "free");
+    const tpl = document.createElement("div");
+    tpl.className = "tplItem card";
+    tpl.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:700">${t.title}</div>
+          <div class="small">Type: ${t.type.toUpperCase()} · Tier: ${t.tier}</div>
+        </div>
+        <div style="text-align:right">
+          <button class="btn" ${isAllowed? "": "disabled"} onclick='openTemplate("${t.id}")'>Open</button>
+          ${isAllowed? "": "<div class='small' style='color:#b91c1c'>Locked — upgrade</div>"}
+        </div>
+      </div>`;
+    el.appendChild(tpl);
+  });
+}
+
+function allowedTiers(tier){
+  if(tier === "lifetime" || tier === "pro") return ["free","medium","pro"];
+  if(tier === "medium") return ["free","medium"];
+  return ["free"];
+}
+
+/* ---------- Open template into preview/editor ---------- */
+window.openTemplate = async (tid) => {
+  let t = templates.find(x => x.id === tid) || FALLBACK_TEMPLATES.find(x => x.id === tid);
+  if(!t) return alert("Template not found");
+  document.getElementById("editorTitle").innerText = t.title;
+  document.getElementById("editorType").innerText = t.type.toUpperCase();
+  const preview = document.getElementById("templatePreview");
+  preview.innerHTML = t.html || "<div contenteditable>Empty Template</div>";
+  preview.dataset.tid = t.id;
+  preview.dataset.ttype = t.type;
+  // make contenteditable elements editable
+  preview.querySelectorAll("[contenteditable]").forEach(el => el.setAttribute("contenteditable","true"));
+};
+
+/* ---------- Export to PNG / PDF using html2canvas + jsPDF ---------- */
+window.exportPNG = async () => {
+  const node = document.getElementById("templatePreview");
+  if(!node || node.innerHTML.trim()==="") return alert("Open a template first");
+  if(typeof html2canvas === "undefined") return alert("html2canvas not loaded");
+  const canvas = await html2canvas(node, { scale:2, useCORS:true, backgroundColor: null });
+  const dataUrl = canvas.toDataURL("image/png");
+  const a = document.createElement("a"); a.href = dataUrl; a.download = "cvwizard_export.png"; a.click();
+};
+
+window.exportPDF = async () => {
+  if(typeof html2canvas === "undefined" || typeof window.jspdf === "undefined") return alert("Libraries not loaded");
+  const node = document.getElementById("templatePreview");
+  const canvas = await html2canvas(node, { scale:2, useCORS:true, backgroundColor: null });
+  const imgData = canvas.toDataURL("image/png");
+  const pdf = new window.jspdf.jsPDF({ orientation: "portrait", unit: "px", format: [canvas.width, canvas.height] });
+  pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+  pdf.save("cvwizard_export.pdf");
+};
+
+/* ---------- Save project: upload preview to storage + create doc ---------- */
+window.saveProject = async () => {
+  if(!currentUser) return alert("Sign in first");
+  const node = document.getElementById("templatePreview");
+  if(!node || node.innerHTML.trim()==="") return alert("Open a template first");
+  if(!await ensureFreeQuota()) return;
+  const canvas = await html2canvas(node, { scale:2, useCORS:true, backgroundColor: null });
+  const dataUrl = canvas.toDataURL("image/png");
+  const path = `previews/${currentUser.uid}/${Date.now()}.png`;
+  const stRef = sref(storage, path);
+  await uploadString(stRef, dataUrl, "data_url");
+  const url = await getDownloadURL(stRef);
+  await addDoc(collection(db, "projects"), { uid: currentUser.uid, templateId: node.dataset.tid || null, type: node.dataset.ttype || null, preview: url, createdAt: Date.now() });
+  alert("Saved to cloud!");
+  loadUserProjects();
+};
+
+async function ensureFreeQuota(){
+  if(!currentUser) return false;
+  const udoc = await getDoc(doc(db, "users", currentUser.uid));
+  const tier = udoc.exists()? (udoc.data().subscriptionTier || "free") : "free";
+  if(tier === "free"){
+    const q = query(collection(db, "projects"), where("uid","==",currentUser.uid));
+    const snap = await getDocs(q);
+    if(snap.size >= 3){ alert("Free plan allows 3 saved projects. Upgrade to save more."); return false; }
+  }
+  return true;
+}
+
+/* ---------- Load user projects ---------- */
+async function loadUserProjects(){
+  if(!currentUser) return;
+  const list = document.getElementById("projectsList");
+  list.innerHTML = "";
+  try {
+    const q = query(collection(db, "projects"), where("uid","==",currentUser.uid), orderBy("createdAt","desc"), limit(20));
+    const snap = await getDocs(q);
+    snap.forEach(d => {
+      const data = d.data();
+      const div = document.createElement("div");
+      div.className = "projectItem";
+      div.innerHTML = `<img src="${data.preview}" style="width:120px;height:80px;object-fit:cover;border-radius:6px"><div style="margin-left:8px"><div><b>${data.type||''}</b></div><div class="small">${new Date(data.createdAt).toLocaleString()}</div></div>`;
+      list.appendChild(div);
+    });
+  } catch(e){ console.warn("Load projects err", e.message); }
+}
+
+/* ---------- Graphic Editor (Fabric.js) ---------- */
+let fabricCanvas = null;
+window.openGraphicEditor = () => {
+  document.getElementById("graphicModal").style.display = "grid";
+  if(!fabricCanvas){
+    fabricCanvas = new fabric.Canvas('fabricCanvas',{ backgroundColor:"#fff", width:800, height:450 });
+  }
+};
+window.closeGraphicEditor = () => {
+  document.getElementById("graphicModal").style.display = "none";
+};
+window.loadImageToCanvas = (ev) => {
+  const file = ev.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    fabric.Image.fromURL(e.target.result, img => { img.scaleToWidth(700); fabricCanvas.clear(); fabricCanvas.add(img); fabricCanvas.renderAll(); });
+  };
+  reader.readAsDataURL(file);
+};
+window.addTextToCanvas = () => {
+  const it = new fabric.IText('Editable Text', { left:50, top:50, fill:'#111', fontSize:36 });
+  fabricCanvas.add(it).setActiveObject(it);
+};
+window.exportCanvasPNG = () => {
+  const data = fabricCanvas.toDataURL({ format:'png' });
+  const a = document.createElement('a'); a.href = data; a.download = 'graphic.png'; a.click();
+};
+
+/* ---------- Chatbot (demo, pluggable to Cloud Function) ---------- */
+window.openChat = () => { document.getElementById("chatModal").style.display = "grid"; };
+window.closeChat = () => { document.getElementById("chatModal").style.display = "none"; };
+window.sendChat = async () => {
+  const q = document.getElementById("chatInput").value.trim(); if(!q) return;
+  const body = document.getElementById("chatBody");
+  const userDiv = document.createElement("div"); userDiv.className="chatUser"; userDiv.innerText = "You: " + q; body.appendChild(userDiv);
+  document.getElementById("chatInput").value = "";
+  if(CLOUD_FUNCTION_CHATBOT_URL){
+    try {
+      const res = await fetch(CLOUD_FUNCTION_CHATBOT_URL, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ message:q, uid: currentUser? currentUser.uid : null }) });
+      const data = await res.json();
+      const bot = document.createElement("div"); bot.className="chatBot"; bot.innerText = "Bot: " + (data.reply || "(no reply)");
+      body.appendChild(bot);
+    } catch(err){ const bot = document.createElement("div"); bot.className="chatBot"; bot.innerText = "Bot: Error calling cloud function"; body.appendChild(bot); }
+  } else {
+    const bot = document.createElement("div"); bot.className="chatBot"; bot.innerText = "Bot (demo): I can help with CV tips and template suggestions. Ask me anything!";
+    body.appendChild(bot);
+  }
+  body.scrollTop = body.scrollHeight;
+};
+
+/* ---------- Payments (EasyPaisa / JazzCash manual flow) ---------- */
+window.openPayment = (tier) => {
+  document.getElementById("paymentModal").style.display = "grid";
+  document.getElementById("payTier").innerText = tier;
+};
+window.submitPayment = async () => {
+  if(!currentUser) return alert("Sign in first");
+  const txn = document.getElementById("txnId").value.trim();
+  const tier = document.getElementById("payTier").innerText;
+  if(!txn) return alert("Enter transaction ID or reference");
+  await addDoc(collection(db, "payments"), { uid: currentUser.uid, tier, txn, status: "pending", createdAt: Date.now() });
+  alert("Payment request submitted. Admin should verify and upgrade user's tier in Firestore.");
+  document.getElementById("paymentModal").style.display = "none";
+};
+
+/* ---------- Dev helper: set user tier (for testing) ---------- */
+window._adminSetTier = async (tier) => {
+  if(!currentUser) return alert("Sign in first");
+  await setDoc(doc(db, "users", currentUser.uid), { subscriptionTier: tier }, { merge:true });
+  alert("Tier set to " + tier + " (dev)");
+  location.reload();
+};
+
+/* ---------- ATS CV Score (simple heuristic) ---------- */
+window.checkCVScore = () => {
+  const txt = (document.getElementById("cvText").value || "").toLowerCase();
+  const kws = (document.getElementById("kwInput").value || "").toLowerCase().split(",").map(s=>s.trim()).filter(Boolean);
+  if(kws.length === 0) {
+    // simple length-based score
+    const words = txt.split(/\s+/).filter(Boolean).length;
+    const score = Math.min(100, Math.round(words/5));
+    document.getElementById("cvScore").innerText = `ATS Score: ${score}/100 (based on length heuristic)`;
+    return;
+  }
+  let hits = 0;
+  kws.forEach(k => { if(txt.includes(k)) hits++; });
+  const pct = Math.round((hits / kws.length) * 100);
+  document.getElementById("cvScore").innerText = `ATS Score: ${pct}/100 — Missing: ${kws.filter(k=>!txt.includes(k)).join(", ") || "None"}`;
+};
+
+/* ---------- expose some functions to global (if needed) ---------- */
+window.loadTemplates = loadTemplates;
+window.loadUserProjects = loadUserProjects;
+
+</script>
+
+<!-- ========== External libs (non-module) ========== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/4.6.0/fabric.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.10.0/pptxgen.min.js"></script>
+
+<!-- ========== Styles ========== -->
+<style>
+:root{--brand:#6a1b9a;--accent:#06b6d4;--muted:#6b7280}
+*{box-sizing:border-box}
+body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;margin:0;background:#f3f4f6;color:#0b1220}
+header{background:linear-gradient(90deg,var(--brand),var(--accent));color:#fff;padding:20px;text-align:center}
+.wrap{max-width:1100px;margin:18px auto;padding:12px}
+.card{background:#fff;padding:12px;border-radius:10px;box-shadow:0 8px 20px rgba(2,6,23,.06);margin-bottom:12px}
+.small{font-size:13px;color:var(--muted)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.panel{display:grid;grid-template-columns:1fr 360px;gap:18px}
+.tplItem{padding:10px;border-bottom:1px solid #f0f0f0}
+.btn{background:var(--brand);color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+#templatePreview{background:#fff;border:1px solid #e6e6e6;border-radius:8px;padding:12px;height:420px;overflow:auto}
+.projectItem{display:flex;gap:10px;align-items:center;padding:8px;border-bottom:1px solid #f6f6f6}
+.modal{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.5);z-index:90}
+.modalCard{background:#fff;padding:16px;border-radius:10px;max-width:920px;width:95%}
+.chatUser{background:#e6f4ff;padding:8px;margin:6px;border-radius:8px;text-align:right}
+.chatBot{background:#f3f4f6;padding:8px;margin:6px;border-radius:8px}
+</style>
 </head>
 <body>
-  <h1>Skillify Signup/Login</h1>
-  <input type="email" id="email" placeholder="Enter Email" />
-  <input type="password" id="password" placeholder="Enter Password" />
-  <button onclick="signup()">Signup</button>
-  <button onclick="login()">Login</button>
+
+<header>
+  <h1>CV Wizard Studio</h1>
+  <div class="small">Design • Edit • Export • Grow — your career visuals toolkit</div>
+</header>
+
+<div class="wrap">
+
+  <!-- AUTH BOX -->
+  <div id="authBox" class="card">
+    <h2>Get started — Sign up or Login</h2>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <input id="signupEmail" placeholder="Email" style="flex:1;padding:10px">
+      <input id="signupPassword" placeholder="Password" type="password" style="flex:1;padding:10px">
+      <button class="btn" onclick="doSignup()">Sign up</button>
+    </div>
+    <div style="height:10px"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <input id="loginEmail" placeholder="Email" style="flex:1;padding:10px">
+      <input id="loginPassword" placeholder="Password" type="password" style="flex:1;padding:10px">
+      <button class="btn" onclick="doLogin()">Login</button>
+    </div>
+    <p class="small" style="margin-top:8px">Tip: After signup, you'll see the editor and your dashboard. Use the Upgrade buttons to request payment (manual flow).</p>
+  </div>
+
+  <!-- APP (hidden until login) -->
+  <div id="appWrap" style="display:none">
+    <div class="panel">
+      <div>
+        <div class="card topbar">
+          <div>
+            <div id="userEmail" style="font-weight:700"></div>
+            <div class="small">Tier: <span id="userTier">free</span></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn" onclick="openChat()">Chatbot</button>
+            <button class="btn" onclick="openGraphicEditor()">Graphic Studio</button>
+            <button class="btn" onclick="saveProject()">Save Project</button>
+            <button style="background:#ef4444" onclick="doLogout()">Logout</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Templates</h3>
+          <div class="small">Select a template. Locked templates require upgrade.</div>
+          <div id="templateList" style="margin-top:12px"></div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h3>Editor</h3>
+          <div id="editorTitle" style="font-weight:700">No template selected</div>
+          <div class="small" id="editorType"></div>
+          <div id="templatePreview" style="margin-top:10px"></div>
+
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn" onclick="exportPNG()">Export PNG</button>
+            <button class="btn" onclick="exportPDF()">Export PDF</button>
+            <button class="btn" onclick="saveProject()">Save to Cloud</button>
+            <button class="btn" onclick="document.getElementById('templatePreview').contentEditable='true'">Enable Edit</button>
+            <button class="btn" onclick="document.getElementById('templatePreview').contentEditable='false'">Lock Edit</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h3>CV ATS Checker</h3>
+          <div class="small">Paste CV text and optional keywords (comma separated) to get an instant ATS-like score.</div>
+          <textarea id="cvText" rows="6" style="width:100%;margin-top:8px" placeholder="Paste CV text here..."></textarea>
+          <input id="kwInput" placeholder="Keywords (comma separated) e.g. Python, AWS" style="width:100%;margin-top:8px;padding:8px">
+          <div style="margin-top:8px"><button class="btn" onclick="checkCVScore()">Check ATS Score</button> <span id="cvScore" style="margin-left:12px;font-weight:700"></span></div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h3>Your Projects</h3>
+          <div id="projectsList"></div>
+        </div>
+      </div>
+
+      <aside>
+        <div class="card">
+          <h4>Upgrade & Payments</h4>
+          <div class="small">Medium = 300 PKR (70 templates) · Pro = 500 PKR · Lifetime = 2500 PKR</div>
+          <div style="display:grid;gap:8px;margin-top:12px">
+            <button class="btn" onclick="openPayment('medium')">Upgrade: Medium (300)</button>
+            <button class="btn" onclick="openPayment('pro')">Upgrade: Pro (500)</button>
+            <button class="btn" onclick="openPayment('lifetime')">Lifetime (2500)</button>
+            <button style="background:#111;color:#fff" onclick="_adminSetTier('pro')">DEV: Set My Tier = Pro</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h4>Quick Actions</h4>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn" onclick="loadTemplates()">Reload Templates</button>
+            <button class="btn" onclick="loadUserProjects()">Refresh Projects</button>
+            <button class="btn" onclick="openChat()">Open Chatbot</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h4>Help</h4>
+          <div class="small">To enable a real chatbot: create a Cloud Function that calls OpenAI and set its URL in the script constant <code>CLOUD_FUNCTION_CHATBOT_URL</code>.</div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<!-- Chat Modal -->
+<div id="chatModal" class="modal">
+  <div class="modalCard">
+    <h3>CV Wizard Chatbot</h3>
+    <div id="chatBody" style="height:300px;overflow:auto;border:1px solid #eee;padding:8px;background:#fafafa"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <input id="chatInput" placeholder="Ask for CV tips, templates, or editing help..." style="flex:1;padding:8px">
+      <button class="btn" onclick="sendChat()">Send</button>
+      <button onclick="closeChat()" style="background:#ef4444;color:#fff;padding:8px;border:none;border-radius:6px">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Graphic Editor Modal -->
+<div id="graphicModal" class="modal">
+  <div class="modalCard">
+    <h3>Graphic Studio</h3>
+    <div style="display:flex;gap:12px">
+      <div style="flex:1">
+        <canvas id="fabricCanvas" width="800" height="450" style="border:1px solid #eee"></canvas>
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <input type="file" onchange="loadImageToCanvas(event)" accept="image/*">
+          <button class="btn" onclick="addTextToCanvas()">Add Text</button>
+          <button class="btn" onclick="exportCanvasPNG()">Export PNG</button>
+          <button onclick="closeGraphicEditor()" style="background:#ef4444;color:#fff;padding:8px;border:none;border-radius:6px">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Payment Modal -->
+<div id="paymentModal" class="modal">
+  <div class="modalCard">
+    <h3>Payment — EasyPaisa / JazzCash (Manual)</h3>
+    <p class="small">Send payment to mobile: <b>0300-XXXXXXX</b> (replace with your number). After payment, paste transaction reference below to request verification.</p>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div>Tier:</div><div id="payTier" style="font-weight:700"></div>
+    </div>
+    <div style="margin-top:8px">
+      <input id="txnId" placeholder="Transaction ID / reference" style="width:60%;padding:8px">
+      <button class="btn" onclick="submitPayment()">Submit</button>
+      <button onclick="document.getElementById('paymentModal').style.display='none'" style="background:#ef4444;color:#fff;padding:8px;border:none;border-radius:6px">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Simple scripts for modal helpers (non-module) -->
+<script>
+  function openChat(){ document.getElementById('chatModal').style.display='grid'; }
+  function closeChat(){ document.getElementById('chatModal').style.display='none'; }
+  function openGraphicEditor(){ document.getElementById('graphicModal').style.display='grid'; }
+  function closeGraphicEditor(){ document.getElementById('graphicModal').style.display='none'; }
+  function openPayment(t){ document.getElementById('payTier').innerText=t; document.getElementById('paymentModal').style.display='grid'; }
+</script>
+
 </body>
 </html>
+
