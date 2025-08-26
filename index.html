@@ -1,69 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Skillify</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skillify Signup/Login</title>
+  <!-- Firebase App (the core Firebase SDK) -->
+  <script type="module">
+    // Import Firebase modules
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.2.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.2.0/firebase-analytics.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.2.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.2.0/firebase-firestore.js";
 
-  <!-- App manifest -->
-  <link rel="manifest" href="manifest.json">
+    // Your Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBkjwVJzLowUbdwUU16hXaGLQpZEEVxgcE",
+      authDomain: "skillify-b742c.firebaseapp.com",
+      projectId: "skillify-b742c",
+      storageBucket: "skillify-b742c.firebasestorage.app",
+      messagingSenderId: "296173031324",
+      appId: "1:296173031324:web:0a70f85d66480d38eb0259",
+      measurementId: "G-DKYEMFMB0H"
+    };
 
-  <!-- Icons for PWA -->
-  <link rel="icon" href="icons/icon-192x192.png" type="image/png">
-  <link rel="apple-touch-icon" href="icons/icon-512x512.png">
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-  <!-- Service Worker (for offline caching) -->
-  <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("service-worker.js")
-        .then(() => console.log("✅ Service Worker registered"))
-        .catch(err => console.error("❌ Service Worker error:", err));
-    }
+    // Signup function
+    window.signup = async () => {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        alert("Signup successful! User UID: " + user.uid);
+
+        // Save user info in Firestore
+        await setDoc(doc(db, "users", user.uid), {
+          email: email,
+          createdAt: new Date()
+        });
+        console.log("User data saved in Firestore.");
+      } catch (error) {
+        console.error(error);
+        alert(error.message);
+      }
+    };
+
+    // Login function
+    window.login = async () => {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        alert("Login successful! Welcome " + user.email);
+      } catch (error) {
+        console.error(error);
+        alert(error.message);
+      }
+    };
   </script>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      text-align: center;
-      background: #f5f5f5;
-    }
-    header {
-      background: #4CAF50;
-      color: white;
-      padding: 20px;
-      font-size: 1.5em;
-    }
-    .container {
-      margin: 40px auto;
-      max-width: 500px;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    button {
-      background: #4CAF50;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 5px;
-      font-size: 1em;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-    button:hover {
-      background: #45a049;
-    }
-  </style>
 </head>
 <body>
-  <header>🚀 Skillify</header>
-  <div class="container">
-    <h2>Welcome to Skillify</h2>
-    <p>Your skill marketplace to learn and grow.</p>
-    <button onclick="alert('Signup/Login feature coming soon!')">Get Started</button>
-  </div>
+  <h1>Skillify Signup/Login</h1>
+  <input type="email" id="email" placeholder="Enter Email" />
+  <input type="password" id="password" placeholder="Enter Password" />
+  <button onclick="signup()">Signup</button>
+  <button onclick="login()">Login</button>
 </body>
 </html>
