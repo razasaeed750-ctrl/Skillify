@@ -1,135 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Skillify Studio</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #4f46e5, #9333ea);
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      min-height: 100vh;
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creative Template Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBkjwVJzLowUbdwUU16hXaGLQpZEEVxgcE",
+  authDomain: "skillify-b742c.firebaseapp.com",
+  projectId: "skillify-b742c",
+  storageBucket: "skillify-b742c.firebasestorage.app",
+  messagingSenderId: "296173031324",
+  appId: "1:296173031324:web:0a70f85d66480d38eb0259",
+  measurementId: "G-DKYEMFMB0H"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+window.openLogin = async function(){
+  const email = prompt("Enter your email:");
+  const password = prompt("Enter your password:");
+  if(!email || !password) return alert("Email and password required!");
+  try { await signInWithEmailAndPassword(auth,email,password); alert("Logged in successfully!"); }
+  catch(err){ if(confirm("Not registered? Sign up now!")) { try { await createUserWithEmailAndPassword(auth,email,password); alert("Signup successful!"); } catch(err2){alert(err2.message);} } else {alert(err.message);} }
+}
+
+window.handleTemplate = function(type){
+  if(type==='free'){
+    alert("Opening free template...");
+  } else {
+    const tier = prompt("Premium template! Choose tier:\n1. Medium (Rs 300/year)\n2. Pro (Rs 500/year)\n3. Lifetime (Rs 2000)");
+    const paymentMethod = prompt("Choose payment method:\n1. Stripe\n2. JazzCash\n3. EasyPaisa");
+    alert(`Payment simulation: ${tier} via ${paymentMethod}. Premium templates unlocked!`);
+  }
+}
+
+window.toggleChat = function(){
+  const panel=document.getElementById("chatPanel");
+  panel.style.display=panel.style.display==='flex'?'none':'flex';
+}
+
+window.sendMessage = function(e){
+  if(e.key==='Enter'){
+    const input=document.getElementById("chatInput");
+    const msg=input.value.trim();
+    if(msg){
+      const chatBox=document.getElementById("chatMessages");
+      const userMsg=document.createElement("div");
+      userMsg.textContent="You: "+msg; userMsg.style.margin="5px 0"; userMsg.style.fontWeight="600";
+      chatBox.appendChild(userMsg);
+      const botMsg=document.createElement("div");
+      botMsg.textContent="Bot: Hi! You said '"+msg+"'";
+      botMsg.style.margin="5px 0";
+      chatBox.appendChild(botMsg);
+      chatBox.scrollTop=chatBox.scrollHeight;
+      input.value="";
     }
-    header {
-      width: 100%;
-      padding: 20px;
-      background: rgba(0,0,0,0.3);
-      text-align: center;
-      font-size: 2rem;
-      font-weight: bold;
-      letter-spacing: 2px;
-    }
-    .container {
-      margin-top: 50px;
-      background: rgba(255,255,255,0.1);
-      padding: 30px;
-      border-radius: 15px;
-      width: 90%;
-      max-width: 400px;
-      text-align: center;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-    }
-    input {
-      width: 100%;
-      padding: 12px;
-      margin: 10px 0;
-      border: none;
-      border-radius: 8px;
-      outline: none;
-    }
-    button {
-      width: 100%;
-      padding: 12px;
-      margin: 10px 0;
-      border: none;
-      border-radius: 8px;
-      background: #10b981;
-      color: white;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-    button:hover {
-      background: #059669;
-    }
-    #message {
-      margin-top: 15px;
-      font-size: 0.9rem;
-    }
-  </style>
+  }
+}
+</script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Montserrat',sans-serif;}
+body{background:#f0f4f8;color:#333;}
+header{background:linear-gradient(135deg,#ff9a9e 0%,#fad0c4 100%);padding:50px 20px;text-align:center;color:#fff;}
+header h1{font-size:3em;margin-bottom:10px;}
+header p{font-size:1.2em;margin-bottom:20px;}
+header .btn{background:#fff;color:#ff5f6d;padding:15px 25px;border:none;border-radius:25px;font-weight:600;cursor:pointer;transition:0.3s;}
+header .btn:hover{background:#ff5f6d;color:#fff;}
+section{padding:60px 20px;}
+section h2{text-align:center;font-size:2.5em;margin-bottom:40px;color:#ff5f6d;}
+.templates{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;max-width:1200px;margin:0 auto;}
+.template-card{background:#fff;border-radius:15px;box-shadow:0 8px 20px rgba(0,0,0,0.1);overflow:hidden;transition:transform 0.3s;}
+.template-card:hover{transform:scale(1.05);}
+.template-card img{width:100%;height:200px;object-fit:cover;}
+.template-card .content{padding:15px;}
+.template-card .content h3{margin-bottom:10px;color:#ff5f6d;}
+.template-card .content button{background:#ff5f6d;color:#fff;border:none;padding:10px 20px;border-radius:20px;cursor:pointer;transition:0.3s;}
+.template-card .content button:hover{background:#ff9a9e;}
+.chatbot{position:fixed;bottom:20px;right:20px;background:#ff5f6d;color:#fff;border-radius:50px;width:60px;height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:28px;z-index:1000;}
+.chatbot-panel{position:fixed;bottom:90px;right:20px;width:300px;max-height:400px;background:#fff;border-radius:15px;box-shadow:0 8px 20px rgba(0,0,0,0.2);display:none;flex-direction:column;overflow:hidden;z-index:1000;}
+.chatbot-panel header{background:#ff5f6d;color:#fff;padding:15px;text-align:center;}
+.chatbot-panel .messages{flex:1;padding:10px;overflow-y:auto;}
+.chatbot-panel input{border:1px solid #ddd;padding:10px;border-radius:15px;margin:10px;width:calc(100% - 40px);}
+footer{text-align:center;padding:30px 20px;background:#ff9a9e;color:#fff;margin-top:50px;}
+footer a{color:#fff;text-decoration:none;margin:0 10px;font-weight:600;}
+footer .info{margin-top:10px;font-size:0.9em;}
+</style>
 </head>
 <body>
-  <header>✨ Skillify Studio ✨</header>
 
-  <div class="container">
-    <h2>Sign Up</h2>
-    <input type="email" id="signup-email" placeholder="Email" />
-    <input type="password" id="signup-password" placeholder="Password" />
-    <button onclick="signUp()">Sign Up</button>
+<header>
+<h1>Creative Template Hub</h1>
+<p>Your one-stop solution for CVs, Presentations, Designs & Media Templates!</p>
+<button class="btn" onclick="openLogin()">Get Started</button>
+</header>
 
-    <h2>Login</h2>
-    <input type="email" id="login-email" placeholder="Email" />
-    <input type="password" id="login-password" placeholder="Password" />
-    <button onclick="login()">Login</button>
+<section id="cv-wizard">
+<h2>CV Wizard</h2>
+<div class="templates">
+<div class="template-card">
+<img src="https://raw.githubusercontent.com/free-template-source/modern-cv/main/cv1.png" alt="CV Template 1">
+<div class="content"><h3>Modern CV</h3><button onclick="handleTemplate('free')">Use Template</button></div></div>
+<div class="template-card">
+<img src="https://raw.githubusercontent.com/free-template-source/modern-cv/main/cv2.png" alt="CV Template 2">
+<div class="content"><h3>Professional CV</h3><button onclick="handleTemplate('premium')">Use Template</button></div></div>
+</div>
+</section>
 
-    <div id="message"></div>
-  </div>
+<section id="slidemaster">
+<h2>SlideMaster</h2>
+<div class="templates">
+<div class="template-card">
+<img src="https://raw.githubusercontent.com/slide-template-source/free-slides/main/slide1.png" alt="Slide 1">
+<div class="content"><h3>Creative Slide</h3><button onclick="handleTemplate('free')">Use Template</button></div></div>
+<div class="template-card">
+<img src="https://raw.githubusercontent.com/slide-template-source/free-slides/main/slide2.png" alt="Slide 2">
+<div class="content"><h3>Business Slide</h3><button onclick="handleTemplate('premium')">Use Template</button></div></div>
+</div>
+</section>
 
-  <!-- Firebase SDKs -->
-  <script type="module">
-    // Import Firebase SDKs
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } 
-      from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+<section id="designify">
+<h2>Designify Studio</h2>
+<div class="templates">
+<div class="template-card">
+<img src="https://raw.githubusercontent.com/free-design-templates/mockups/main/design1.png" alt="Design 1">
+<div class="content"><h3>Social Media Post</h3><button onclick="handleTemplate('free')">Use Template</button></div></div>
+<div class="template-card">
+<img src="https://raw.githubusercontent.com/free-design-templates/mockups/main/design2.png" alt="Design 2">
+<div class="content"><h3>Banner Design</h3><button onclick="handleTemplate('premium')">Use Template</button></div></div>
+</div>
+</section>
 
-    // Your Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyBkjwVJzLowUbdwUU16hXaGLQpZEEVxgcE",
-      authDomain: "skillify-b742c.firebaseapp.com",
-      projectId: "skillify-b742c",
-      storageBucket: "skillify-b742c.firebasestorage.app",
-      messagingSenderId: "296173031324",
-      appId: "1:296173031324:web:0a70f85d66480d38eb0259",
-      measurementId: "G-DKYEMFMB0H"
-    };
+<section id="mediaforge">
+<h2>MediaForge</h2>
+<div class="templates">
+<div class="template-card">
+<img src="https://raw.githubusercontent.com/free-video-templates/media/main/video1.png" alt="Video 1">
+<div class="content"><h3>Promo Video</h3><button onclick="handleTemplate('free')">Use Template</button></div></div>
+<div class="template-card">
+<img src="https://raw.githubusercontent.com/free-video-templates/media/main/video2.png" alt="Video 2">
+<div class="content"><h3>Marketing Clip</h3><button onclick="handleTemplate('premium')">Use Template</button></div></div>
+</div>
+</section>
 
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-    const auth = getAuth(app);
+<div class="chatbot" onclick="toggleChat()">💬</div>
+<div class="chatbot-panel" id="chatPanel">
+<header>Chat with TemplateBot</header>
+<div class="messages" id="chatMessages"></div>
+<input type="text" id="chatInput" placeholder="Say something..." onkeypress="sendMessage(event)">
+</div>
 
-    // Sign Up Function
-    window.signUp = function() {
-      const email = document.getElementById("signup-email").value;
-      const password = document.getElementById("signup-password").value;
-      createUserWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-          document.getElementById("message").innerText = "✅ Sign Up Successful!";
-        })
-        .catch((error) => {
-          document.getElementById("message").innerText = "❌ " + error.message;
-        });
-    }
+<footer>
+<a href="#">About Us</a> | <a href="#">Contact Us</a><br>
+<div class="info">
+About Us: Skillify is a creative template hub offering CVs, slides, designs & media templates for everyone.<br>
+Contact Us: <a href="mailto:razasaeed750@gmail.com">razasaeed750@gmail.com</a><br>
+&copy; 2025 Skillify | All Rights Reserved
+</div>
+</footer>
 
-    // Login Function
-    window.login = function() {
-      const email = document.getElementById("login-email").value;
-      const password = document.getElementById("login-password").value;
-      signInWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-          document.getElementById("message").innerText = "✅ Login Successful!";
-        })
-        .catch((error) => {
-          document.getElementById("message").innerText = "❌ " + error.message;
-        });
-    }
-  </script>
 </body>
 </html>
