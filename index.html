@@ -1,246 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Skillify - Build Stunning Designs, CVs & Slides</title>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Raza Templates</title>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+  <link rel="icon" type="image/png" href="icons/icon-192.png" />
+  <link rel="manifest" href="manifest.json" />
 
-// Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyBkjwVJzLowUbdwUU16hXaGLQpZEEVxgcE",
-  authDomain: "skillify-b742c.firebaseapp.com",
-  projectId: "skillify-b742c",
-  storageBucket: "skillify-b742c.firebasestorage.app",
-  messagingSenderId: "296173031324",
-  appId: "1:296173031324:web:0a70f85d66480d38eb0259",
-  measurementId: "G-DKYEMFMB0H"
-};
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-
-// Show/Hide Modal
-window.showLogin = () => document.getElementById('loginModal').style.display='flex';
-window.closeLogin = () => document.getElementById('loginModal').style.display='none';
-
-// Switch Tabs
-window.switchTab = (tab) => {
-  document.getElementById('loginTab').style.display=tab==='login'?'block':'none';
-  document.getElementById('signupTab').style.display=tab==='signup'?'block':'none';
-}
-
-// Login
-window.loginUser = async () => {
-  const email = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value.trim();
-  if(!email||!password){ alert("Email and password required!"); return; }
-  try {
-    await signInWithEmailAndPassword(auth,email,password);
-    document.getElementById('loginModal').style.display='none';
-    document.getElementById('landing').style.display='none';
-    document.getElementById('mainContent').style.display='block';
-  } catch(err){ alert("Login failed: "+err.message); }
-}
-
-// Signup
-window.signupUser = async () => {
-  const email = document.getElementById('signupEmail').value.trim();
-  const password = document.getElementById('signupPassword').value.trim();
-  if(!email||!password){ alert("Email and password required!"); return; }
-  try {
-    await createUserWithEmailAndPassword(auth,email,password);
-    document.getElementById('loginModal').style.display='none';
-    document.getElementById('landing').style.display='none';
-    document.getElementById('mainContent').style.display='block';
-  } catch(err){ alert("Signup failed: "+err.message); }
-}
-
-// Handle Templates
-window.handleTemplate = (type) => {
-  if(type==='free'){ alert("Opening free template..."); }
-  else{
-    const tier = prompt("Premium template! Choose tier:\n1. Medium (Rs 300/year)\n2. Pro (Rs 500/year)\n3. Lifetime (Rs 2000)");
-    const method = prompt("Payment method:\n1. Stripe\n2. JazzCash\n3. EasyPaisa");
-    alert(`Payment simulated: ${tier} via ${method}. Premium template unlocked!`);
-  }
-}
-
-// Chatbot
-window.toggleChat = () => {
-  const panel=document.getElementById("chatPanel");
-  panel.style.display=panel.style.display==='flex'?'none':'flex';
-}
-window.sendMessage = (e) => {
-  if(e.key==='Enter'){
-    const input=document.getElementById("chatInput");
-    const msg=input.value.trim();
-    if(msg){
-      const chatBox=document.getElementById("chatMessages");
-      const userMsg=document.createElement("div"); userMsg.textContent="You: "+msg; userMsg.style.margin="5px 0"; userMsg.style.fontWeight="600";
-      chatBox.appendChild(userMsg);
-      const botMsg=document.createElement("div"); botMsg.textContent="Bot: Hello! You said '"+msg+"'"; botMsg.style.margin="5px 0";
-      chatBox.appendChild(botMsg); chatBox.scrollTop=chatBox.scrollHeight; input.value="";
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js")
+        .then(() => console.log("Service Worker Registered"))
+        .catch(err => console.log("SW Registration Failed:", err));
     }
-  }
-}
-</script>
+  </script>
 
-<style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Montserrat',sans-serif;}
-body{background:#f0f4f8;color:#333;}
-/* Landing */
-#landing{background:linear-gradient(135deg,#ff9a9e,#fad0c4);padding:100px 20px;text-align:center;color:#fff;}
-#landing h1{font-size:3.5em;margin-bottom:20px;display:flex;justify-content:center;flex-wrap:wrap;}
-#landing h1 span{background:linear-gradient(90deg,#ff5f6d,#ffc371);-webkit-background-clip:text;color:transparent;font-weight:900;animation:bounce 2s infinite;margin-right:10px;}
-#landing p{font-size:1.5em;margin-bottom:30px;}
-#landing .btn{background:#fff;color:#ff5f6d;padding:15px 30px;border:none;border-radius:25px;font-weight:700;cursor:pointer;transition:0.3s;}
-#landing .btn:hover{background:#ff5f6d;color:#fff;}
-@keyframes bounce {0%,20%,50%,80%,100%{transform:translateY(0);}40%{transform:translateY(-15px);}60%{transform:translateY(-8px);}}
-
-/* Modal */
-#loginModal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);justify-content:center;align-items:center;z-index:1000;}
-#loginModal .modalContent{background:#fff;padding:30px;border-radius:15px;text-align:center;width:350px;position:relative;}
-#loginModal input{width:90%;padding:10px;margin:10px 0;border-radius:10px;border:1px solid #ddd;}
-#loginModal button{padding:10px 20px;border:none;border-radius:20px;margin:5px;cursor:pointer;background:#ff5f6d;color:#fff;font-weight:600;}
-#loginModal .tabSwitch{display:flex;justify-content:center;margin-bottom:15px;}
-#loginModal .tabSwitch button{margin:0 5px;background:#ddd;color:#333;font-weight:600;}
-#loginModal .tabSwitch button.active{background:#ff5f6d;color:#fff;}
-
-/* Main Content */
-#mainContent{display:none;padding:40px 20px;}
-section h2{text-align:center;font-size:2.5em;margin-bottom:40px;color:#ff5f6d;}
-.templates{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;max-width:1200px;margin:0 auto;}
-.template-card{background:#fff;border-radius:15px;box-shadow:0 8px 20px rgba(0,0,0,0.1);overflow:hidden;transition:transform 0.3s;}
-.template-card:hover{transform:scale(1.05);}
-.template-card img{width:100%;height:200px;object-fit:cover;}
-.template-card .content{padding:15px;}
-.template-card .content h3{margin-bottom:10px;color:#ff5f6d;}
-.template-card .content button{background:#ff5f6d;color:#fff;border:none;padding:10px 20px;border-radius:20px;cursor:pointer;transition:0.3s;}
-.template-card .content button:hover{background:#ff9a9e;}
-
-/* Chatbot */
-.chatbot{position:fixed;bottom:20px;right:20px;background:#ff5f6d;color:#fff;border-radius:50px;width:60px;height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:28px;z-index:1000;}
-.chatbot-panel{position:fixed;bottom:90px;right:20px;width:300px;max-height:400px;background:#fff;border-radius:15px;box-shadow:0 8px 20px rgba(0,0,0,0.2);display:none;flex-direction:column;overflow:hidden;z-index:1000;}
-.chatbot-panel header{background:#ff5f6d;color:#fff;padding:15px;text-align:center;}
-.chatbot-panel .messages{flex:1;padding:10px;overflow-y:auto;}
-.chatbot-panel input{border:1px solid #ddd;padding:10px;border-radius:15px;margin:10px;width:calc(100% - 40px);}
-
-/* Footer */
-footer{text-align:center;padding:30px 20px;background:#ff9a9e;color:#fff;margin-top:50px;}
-footer a{color:#fff;text-decoration:none;margin:0 10px;font-weight:600;}
-footer .info{margin-top:10px;font-size:0.9em;}
-</style>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f8f8f8; }
+    header { background:#111; color:#fff; padding:15px; text-align:center; font-size:22px; }
+    .container { padding:20px; display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:20px; }
+    .card { background:#fff; border-radius:12px; box-shadow:0 2px 6px rgba(0,0,0,0.2); padding:15px; text-align:center; }
+    .card img { max-width:100%; border-radius:10px; margin-bottom:10px; }
+    footer { text-align:center; padding:15px; background:#111; color:#fff; margin-top:20px; }
+    a.button { display:inline-block; padding:8px 12px; border:none; border-radius:8px; cursor:pointer; background:#007bff; color:#fff; text-decoration:none; }
+    a.button:hover { background:#0056b3; }
+  </style>
 </head>
 <body>
+  <header>
+    📂 Raza Templates – Free Resources
+  </header>
 
-<!-- Landing -->
-<div id="landing">
-<h1><span>Skillify</span>: Build Stunning Designs, CVs & Slides & More Effortlessly</h1>
-<p>Create, Design, and Inspire</p>
-<button class="btn" onclick="showLogin()">Get Started</button>
-</div>
+  <div class="container">
+    <!-- CV Templates -->
+    <div class="card">
+      <img src="https://via.placeholder.com/300x200.png?text=CV+Template" alt="CV Template">
+      <h3>CV Template (Word)</h3>
+      <p>Professional CV in editable Word format.</p>
+      <a class="button" href="downloads/cv-template.docx" download>Download DOCX</a>
+    </div>
 
-<!-- Login/Signup Modal -->
-<div id="loginModal">
-<div class="modalContent">
-  <div class="tabSwitch">
-    <button class="active" onclick="switchTab('login')">Login</button>
-    <button onclick="switchTab('signup')">Sign Up</button>
+    <div class="card">
+      <img src="https://via.placeholder.com/300x200.png?text=CV+PDF" alt="CV PDF">
+      <h3>CV Template (PDF)</h3>
+      <p>Ready-to-use CV template in PDF.</p>
+      <a class="button" href="downloads/cv-template.pdf" download>Download PDF</a>
+    </div>
+
+    <!-- PPT Templates -->
+    <div class="card">
+      <img src="https://via.placeholder.com/300x200.png?text=PPT+Template" alt="PPT Template">
+      <h3>Business PPT Template</h3>
+      <p>Clean & modern slides for presentations.</p>
+      <a class="button" href="downloads/ppt-template.pptx" download>Download PPT</a>
+    </div>
+
+    <div class="card">
+      <img src="https://via.placeholder.com/300x200.png?text=Creative+PPT" alt="Creative PPT">
+      <h3>Creative PPT Template</h3>
+      <p>Stylish and colorful presentation template.</p>
+      <a class="button" href="downloads/ppt-template2.pptx" download>Download PPT</a>
+    </div>
+
+    <!-- Services (Example Future Additions) -->
+    <div class="card">
+      <img src="https://via.placeholder.com/300x200.png?text=Resume+Builder" alt="Resume Service">
+      <h3>Resume Builder</h3>
+      <p>Coming soon: Build your resume directly on our site!</p>
+      <a class="button" href="#">Coming Soon</a>
+    </div>
   </div>
-  <div id="loginTab">
-    <input type="email" id="loginEmail" placeholder="Email">
-    <input type="password" id="loginPassword" placeholder="Password">
-    <button onclick="loginUser()">Login</button>
-  </div>
-  <div id="signupTab" style="display:none;">
-    <input type="email" id="signupEmail" placeholder="Email">
-    <input type="password" id="signupPassword" placeholder="Password">
-    <button onclick="signupUser()">Sign Up</button>
-  </div>
-  <button style="background:#ddd;color:#333;" onclick="closeLogin()">Cancel</button>
-</div>
-</div>
 
-<!-- Main Content -->
-<div id="mainContent">
-<section id="cv-wizard">
-<h2>CV Wizard</h2>
-<div class="templates">
-<div class="template-card">
-<img src="https://source.unsplash.com/400x300/?resume,cv" alt="CV Template 1">
-<div class="content"><h3>Modern CV</h3><button onclick="handleTemplate('free')">Use Template</button></div>
-</div>
-<div class="template-card">
-<img src="https://source.unsplash.com/400x300/?cv,professional" alt="CV Template 2">
-<div class="content"><h3>Professional CV</h3><button onclick="handleTemplate('premium')">Use Template</button></div>
-</div>
-</div>
-</section>
-
-<section id="slidemaster">
-<h2>SlideMaster</h2>
-<div class="templates">
-<div class="template-card">
-<img src="https://source.unsplash.com/400x300/?presentation,slide" alt="Slide 1">
-<div class="content"><h3>Creative Slide</h3><button onclick="handleTemplate('free')">Use Template</button></div>
-</div>
-<div class="template-card">
-<img src="https://source.unsplash.com/400x300/?slides,business" alt="Slide 2">
-<div class="content"><h3>Business Slide</h3><button onclick="handleTemplate('premium')">Use Template</button></div>
-</div>
-</div>
-</section>
-
-<section id="designify">
-<h2>Designify Studio</h2>
-<div class="templates">
-<div class="template-card">
-<img src="https://source.unsplash.com/400x300/?design,creative" alt="Design 1">
-<div class="content"><h3>Social Media Post</h3><button onclick="handleTemplate('free')">Use Template</button></div>
-</div>
-<div class="template-card">
-<img src="https://source.unsplash.com/400x300/?banner,design" alt="Design 2">
-<div class="content"><h3>Banner Design</h3><button onclick="handleTemplate('premium')">Use Template</button></div>
-</div>
-</div>
-</section>
-
-<section id="mediaforge">
-<h2>MediaForge</h2>
-<div class="templates">
-<div class="template-card">
-<img src="https://source.unsplash.com/400x300/?video,promo" alt="Video 1">
-<div class="content"><h3>Promo Video</h3><button onclick="handleTemplate('free')">Use Template</button></div>
-</div>
-<div class="template-card">
-<img src="https://source.unsplash.com/400x300/?marketing,clip" alt="Video 2">
-<div class="content"><h3>Marketing Clip</h3><button onclick="handleTemplate('premium')">Use Template</button></div>
-</div>
-</div>
-</section>
-</div>
-
-<!-- Chatbot -->
-<div class="chatbot" onclick="toggleChat()">💬</div>
-<div class="chatbot-panel" id="chatPanel">
-<header>Chat with TemplateBot</header>
-<div class="messages" id="chatMessages"></div>
-<input type="text" id="chatInput" placeholder="Say something..." onkeypress="sendMessage(event)">
-</div>
-
-<!-- Footer -->
-<footer>
-<a href="#">About Us</a> | <a href="#">Contact Us</a><br>
-<div class="info">
-About Us: Skillify is a creative hub offering CVs, slides, designs & media templates.<br>
-Contact: <a href="mailto:razasaeed750@gmail.com">razasaeed750@gmail.com</a><br>
-&copy; 2025 Skillify | All Rights Reserved
-</div>
-</footer>
-
+  <footer>
+    © 2025 Raza Templates | All Rights Reserved
+  </footer>
 </body>
 </html>
